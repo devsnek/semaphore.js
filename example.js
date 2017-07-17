@@ -5,6 +5,8 @@ const sharedArray = new Int32Array(sharedBuffer);
 
 // new semaphore with max of 10
 const s = Semaphore.create(sharedArray, 0, 10);
+// in a worker or something you can do
+// const s = Semaphore.load(new Int32Array(sharedBuffer), 0);
 
 s.acquire(11) // false
 s.acquire(10) // true

@@ -1,7 +1,7 @@
 // inspired by
 // https://github.com/rauschma/shared-array-buffer-demo/blob/master/lock_es6.js
 // lock count, lock max
-const NUMINTS = 2;
+const NUMINTS = 1;
 
 class Semaphore {
   constructor(iab, ibase) {
@@ -14,25 +14,32 @@ class Semaphore {
 
   static create(iab, ibase, max = 1) {
     const s = new Semaphore(iab, ibase);
-    Atomics.store(iab, ibase, 0);
-    Atomics.store(iab, ibase + 1, max);
+    Atomics.store(iab, ibase, store(0, max));
     return s;
   }
 
+  static load(iab, ibase) {
+    return new Semaphore(iab, ibase);
+  }
+
   acquire(count = 1) {
-    const current = Atomics.load(this.iab, this.ibase, 1);
-    const max = Atomics.load(this.iab, this.ibase + 1);
-    if (current + count - 1 >= max) return false;
-    Atomics.store(this.iab, this.ibase, current + count);
+    const { acquired, max } = get(Atomics.load(this.iab, this.ibase));
+    if (acquired + count - 1 >= max) return false;
+    Atomics.store(this.iab, this.ibase, store(acquired + count, max));
     Atomics.wake(this.iab, this.ibase, 1);
     return true;
   }
 
   release(count = 1) {
-    const current = Atomics.load(this.iab, this.ibase);
-    Atomics.store(this.iab, this.ibase, Math.max(0, current - count));
+    const { acquired, max } = get(Atomics.load(this.iab, this.ibase));
+    if (acquired - count < 0) return false;
+    Atomics.store(this.iab, this.ibase, store(acquired - count, max));
     Atomics.wake(this.iab, this.ibase, 1);
     return true;
+  }
+
+  get acquired() {
+    return get(Atomics.load(this.iab, this.ibase)).acquired;
   }
 
   toString() {
@@ -42,6 +49,17 @@ class Semaphore {
   inspect() {
     return this.toString();
   }
+}
+
+function get(i) {
+  return {
+    acquired: i & 0xFFFF,
+    max: (i >> 16) & 0xFFFF,
+  }
+}
+
+function store(count, max) {
+  return count | (max << 16);
 }
 
 module.exports = Semaphore;
