@@ -1,0 +1,16 @@
+{
+  "name": "semaphore",
+  "version": "1.0.0",
+  "description": "Proper semaphores for javascript",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devsnek/semaphore.js.git"
+  },
+  "author": "snek <me@gus.host>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/devsnek/semaphore.js/issues"
+  },
+  "homepage": "https://github.com/devsnek/semaphore.js#readme"
+}
