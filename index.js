@@ -71,4 +71,4 @@ function store(sem, acquired, max) {
   Atomics.wake(sem.iab, sem.ibase, 1);
 }
 
-module.exports = Semaphore;
+if (typeof module !== 'undefined') module.exports = Semaphore;
