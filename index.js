@@ -14,7 +14,7 @@ class Semaphore {
 
   static create(iab, ibase, max = 1) {
     const s = new Semaphore(iab, ibase);
-    Atomics.store(iab, ibase, store(0, max));
+    store(s, 0, max);
     return s;
   }
 
@@ -23,23 +23,30 @@ class Semaphore {
   }
 
   acquire(count = 1) {
-    const { acquired, max } = get(Atomics.load(this.iab, this.ibase));
+    const { acquired, max } = get(this);
     if (acquired + count - 1 >= max) return false;
-    Atomics.store(this.iab, this.ibase, store(acquired + count, max));
-    Atomics.wake(this.iab, this.ibase, 1);
+    store(this, acquired + count, max);
     return true;
   }
 
   release(count = 1) {
-    const { acquired, max } = get(Atomics.load(this.iab, this.ibase));
+    const { acquired, max } = get(this);
     if (acquired - count < 0) return false;
-    Atomics.store(this.iab, this.ibase, store(acquired - count, max));
-    Atomics.wake(this.iab, this.ibase, 1);
+    store(this, acquired - count, max);
     return true;
   }
 
+  wait() {
+    let { acquired, max } = get(this);
+    if (acquired >= max) {
+      do {
+        Atomics.wait(this.iab, this.ibase, acquired, Number.POSITIVE_INFINITY);
+      } while ((acquired = get(this).acquired) >= max);
+    }
+  }
+
   get acquired() {
-    return get(Atomics.load(this.iab, this.ibase)).acquired;
+    return get(this).acquired;
   }
 
   toString() {
@@ -51,15 +58,17 @@ class Semaphore {
   }
 }
 
-function get(i) {
+function get(sem) {
+  const i = Atomics.load(sem.iab, sem.ibase);
   return {
     acquired: i & 0xFFFF,
     max: (i >> 16) & 0xFFFF,
   }
 }
 
-function store(count, max) {
-  return count | (max << 16);
+function store(sem, acquired, max) {
+  Atomics.store(sem.iab, sem.ibase, acquired | (max << 16));
+  Atomics.wake(sem.iab, sem.ibase, 1);
 }
 
 module.exports = Semaphore;
