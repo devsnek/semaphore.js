@@ -1,11 +1,12 @@
-// inspired by
+/* global Atomics */
+// Inspired by
 // https://github.com/rauschma/shared-array-buffer-demo/blob/master/lock_es6.js
-// lock count, lock max
+
 const NUMINTS = 1;
 
 class Semaphore {
   constructor(iab, ibase) {
-    if (!(iab instanceof Int32Array && ibase | 0 === ibase && ibase >= 0 && ibase + NUMINTS <= iab.length)) {
+    if (!(iab instanceof Int32Array) || ibase | ibase !== 0 || ibase < 0 || ibase + NUMINTS > iab.length) {
       throw new Error(`Bad arguments to Semaphore constructor: ${iab} ${ibase}`);
     }
     this.iab = iab;
@@ -63,7 +64,7 @@ function get(sem) {
   return {
     acquired: i & 0xFFFF,
     max: (i >> 16) & 0xFFFF,
-  }
+  };
 }
 
 function store(sem, acquired, max) {
